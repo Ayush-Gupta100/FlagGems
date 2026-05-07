@@ -54,15 +54,15 @@ DTYPE_MAP = {
 
 
 def pinfo(str, **args):
-    print(f"\033[32m[INFO]\033[0m {str}", **args)
+    print(f"\033[32m[INFO]\033[0m {str}", flush=True, **args)
 
 
 def perror(str, **args):
-    print(f"\033[31m[ERROR]\033[0m {str}", **args)
+    print(f"\033[31m[ERROR]\033[0m {str}", flush=True, **args)
 
 
 def pwarn(str, **args):
-    print(f"\033[93m[WARN]\033[0m {str}", **args)
+    print(f"\033[93m[WARN]\033[0m {str}", flush=True, **args)
 
 
 def ensure_dir(p):
@@ -202,6 +202,7 @@ def run_cmd(cmd, cwd=None, env=None, timeout=600):
             env=env,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            start_new_session=True,
         )
         p.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -272,8 +273,6 @@ def parse_accuracy_data(result_file):
 def get_env(gpu_ids):
     env = os.environ.copy()
 
-    # Ensure python output are unbuffered
-    env["PYTHONUNBUFFERED"] = "1"
     vendor = ENV_INFO.get("flag_gems", {}).get("vendor", "")
 
     if vendor == "ascend":
@@ -391,7 +390,7 @@ def parse_perf_data(op, result_file):
         count = 0
         # Iterate through shapes
         for res in item.get("result", []):
-            shape = str(res.get("shape_detail", "UNKNOWN")).replace(" ", "")
+            shape = str(res.get("shape_detail", "Unknown")).replace(" ", "")
             details.setdefault(shape, {})
             details[shape]["base"] = res.get("latency_base", 0.0)
             details[shape]["gems"] = res.get("latency", 0.0)
@@ -463,7 +462,7 @@ def run_benchmark(gpu_id, start, index, count):
         "duration": end - start,
         "exit_code": code,
         "data_file": str(result_file.relative_to(OUTPUT_DIR)),
-        "data": [],
+        "data": {},
     }
     record.update(parse_perf_data(op, result_file))
 
